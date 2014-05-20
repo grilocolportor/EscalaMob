@@ -6,6 +6,8 @@ import org.avs.tools.FriendController;
 import org.avs.types.FriendInfo;
 import org.avs.types.STATUS;
 
+
+
 import android.app.ListActivity;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
