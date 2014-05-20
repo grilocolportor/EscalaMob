@@ -46,7 +46,6 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.os.Binder;
 import android.os.IBinder;
@@ -68,8 +67,6 @@ import at.vcity.androidim.R;
  */
 public class IMService extends Service implements IAppManager, IUpdateData {
 	// private NotificationManager mNM;
-
-	private Cursor cursor;
 
 	public static String USERNAME;
 	public static final String TAKE_MESSAGE = "Take_Message";
@@ -109,40 +106,33 @@ public class IMService extends Service implements IAppManager, IUpdateData {
 		// Display a notification about us starting. We put an icon in the
 		// status bar.
 		// showNotification();
+		conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+		// new LocalStorageHandler(this);
 
-		//cursor = localstoragehandler.getUsuario();
+		// Timer is used to take the friendList info every UPDATE_TIME_PERIOD;
+		timer = new Timer();
 
-		//se existir um usuario cadastrado inicia o serviço
-		//if (cursor.getCount() > 0) {
+		Thread thread = new Thread() {
+			@Override
+			public void run() {
 
-			conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-			new LocalStorageHandler(this);
-
-			// Timer is used to take the friendList info every
-			// UPDATE_TIME_PERIOD;
-			timer = new Timer();
-
-			Thread thread = new Thread() {
-				@Override
-				public void run() {
-
-					// socketOperator.startListening(LISTENING_PORT_NO);
-					Random random = new Random();
-					int tryCount = 0;
-					while (socketOperator.startListening(10000 + random
-							.nextInt(20000)) == 0) {
-						tryCount++;
-						if (tryCount > 10) {
-							// if it can't listen a port after trying 10 times,
-							// give up...
-							break;
-						}
-
+				// socketOperator.startListening(LISTENING_PORT_NO);
+				Random random = new Random();
+				int tryCount = 0;
+				while (socketOperator.startListening(10000 + random
+						.nextInt(20000)) == 0) {
+					tryCount++;
+					if (tryCount > 10) {
+						// if it can't listen a port after trying 10 times, give
+						// up...
+						break;
 					}
+
 				}
-			};
-			thread.start();
-		//}
+			}
+		};
+		thread.start();
+
 	}
 
 	/*

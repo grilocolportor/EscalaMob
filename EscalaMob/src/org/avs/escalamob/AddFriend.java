@@ -9,12 +9,16 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -26,125 +30,201 @@ import at.vcity.androidim.R;
 // TODO: Add javadoc
 public class AddFriend extends Activity implements OnClickListener {
 
-    private static Button mAddFriendButton;
-    private static Button mCancelButton;
-    private static EditText mFriendUserNameText;
+	private static Button mAddFriendButton;
+	private static Button mCancelButton;
+	private static EditText mFriendUserNameText;
 
-    private static IAppManager mImService;
+	private static IAppManager mImService;
 
-    private static final int TYPE_FRIEND_USERNAME = 0;
-    private static final String LOG_TAG = "AddFriend";
+	private static final int TYPE_FRIEND_USERNAME = 0;
+	private static final String LOG_TAG = "AddFriend";
+	
+	private String numero;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.add_new_friend);
-        setTitle(getString(R.string.add_new_friend));
+		setContentView(R.layout.add_new_friend);
+		setTitle(getString(R.string.add_new_friend));
 
-        mAddFriendButton = (Button)findViewById(R.id.addFriend);
-        mCancelButton = (Button)findViewById(R.id.cancel);
-        mFriendUserNameText = (EditText)findViewById(R.id.newFriendUsername);
+		mAddFriendButton = (Button) findViewById(R.id.addFriend);
+		mCancelButton = (Button) findViewById(R.id.cancel);
+		mFriendUserNameText = (EditText) findViewById(R.id.newFriendUsername);
 
-        if (mAddFriendButton != null) {
-            mAddFriendButton.setOnClickListener(this);
-        } else {
-            Log.e(LOG_TAG, "onCreate: mAddFriendButton is null");
-            throw new NullPointerException("onCreate: mAddFriendButton is null");
-        }
+		if (mAddFriendButton != null) {
+			mAddFriendButton.setOnClickListener(this);
+		} else {
+			Log.e(LOG_TAG, "onCreate: mAddFriendButton is null");
+			throw new NullPointerException("onCreate: mAddFriendButton is null");
+		}
 
-        if (mCancelButton != null) {
-            mCancelButton.setOnClickListener(this);
-        } else {
-            Log.e(LOG_TAG, "onCreate: mCancelButton is null");
-            throw new NullPointerException("onCreate: mCancelButton is null");
-        }
-    }
+		if (mCancelButton != null) {
+			mCancelButton.setOnClickListener(this);
+		} else {
+			Log.e(LOG_TAG, "onCreate: mCancelButton is null");
+			throw new NullPointerException("onCreate: mCancelButton is null");
+		}
+		
+		this.verificaContatos();
 
-    @Override
-    protected void onResume() {
-        super.onResume();
+	}
 
-        Intent intent = new Intent(this, IMService.class);
-        if (mConnection != null) {
-            bindService(intent, mConnection , Context.BIND_AUTO_CREATE);
-        } else {
-            Log.e(LOG_TAG, "onResume: mConnection is null");
-        }
+	public void verificaContatos() {
 
-    }
+		String numero;
 
-    @Override
-    protected void onPause() {
-        super.onPause();
+		String email = null;
 
-        if (mConnection != null) {
-            unbindService(mConnection);
-        } else {
-            Log.e(LOG_TAG, "onResume: mConnection is null");
-        }
-    }
+		Uri CONTENT_URI = ContactsContract.Contacts.CONTENT_URI;
+		String _ID = ContactsContract.Contacts._ID;
+		String DISPLAY_NAME = ContactsContract.Contacts.DISPLAY_NAME;
+		String HAS_PHONE_NUMBER = ContactsContract.Contacts.HAS_PHONE_NUMBER;
 
-    @Override
-    public void onClick(View view) {
-        if (view == mCancelButton) {
-            finish();
-        } else if (view == mAddFriendButton) {
-            addNewFriend();
-        } else {
-            Log.e(LOG_TAG, "onClick: view clicked is unknown");
-        }
-    }
+		Uri PHONE_CONTENT_URI = ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
+		String PHONE_CONTACT_ID = ContactsContract.CommonDataKinds.Phone.CONTACT_ID;
+		String NUMBER = ContactsContract.CommonDataKinds.Phone.NUMBER;
 
-    private final ServiceConnection mConnection = new ServiceConnection() {
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            mImService = ((IMService.IMBinder)service).getService();
-        }
+		ContentResolver contentResolver = getContentResolver();
 
-        public void onServiceDisconnected(ComponentName className) {
-            if (mImService != null) {
-                mImService = null;
-            }
+		Cursor cursor = contentResolver.query(CONTENT_URI, null, null, null,
+				null);
 
-            Toast.makeText(AddFriend.this, R.string.local_service_stopped, Toast.LENGTH_SHORT).show();
-        }
-    };
+		if (cursor.getCount() > 0) {
+			if (cursor.moveToNext()) {
 
-    // TODO: Remove deprecated method
-    protected Dialog onCreateDialog(int id) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(AddFriend.this);
-        if (id == TYPE_FRIEND_USERNAME) {
-            builder.setTitle(R.string.add_new_friend)
-                   .setMessage(R.string.type_friend_username)
-                   .setPositiveButton(R.string.OK, new DialogInterface.OnClickListener() {
-                       public void onClick(DialogInterface dialog, int whichButton) {
-                           // TODO
-                       }
-                   });
-        }
+				String contact_id = cursor
+						.getString(cursor.getColumnIndex(_ID));
+				String name = cursor.getString(cursor
+						.getColumnIndex(DISPLAY_NAME));
 
-        return builder.create();
-     }
+				int temPhone = Integer.parseInt(cursor.getString(cursor
+						.getColumnIndex(HAS_PHONE_NUMBER)));
 
-    private void addNewFriend() {
-        if (mFriendUserNameText.length() > 0) {
-            // TODO: A thread is really needed ?
-            Thread thread = new Thread() {
-                @Override
-                public void run() {
-                    // TODO: Please check if the request is successful and raise a error message if needed.
-                    mImService.addNewFriendRequest(mFriendUserNameText.getText().toString());
-                }
-            };
-            thread.start();
+				if (temPhone > 0) {
 
-            // TODO: Show the toast only if the sent of the request is successful
-            Toast.makeText(AddFriend.this, R.string.request_sent, Toast.LENGTH_SHORT).show();
+					Cursor phoneCursor = contentResolver.query(
+							PHONE_CONTENT_URI, null,
+							PHONE_CONTACT_ID + " = ? ",
+							new String[] { contact_id }, null);
 
-            finish();
-        } else {
-            Log.e(LOG_TAG, "addNewFriend: username length (" + mFriendUserNameText.length() + ") is < 0");
-            Toast.makeText(AddFriend.this, R.string.type_friend_username, Toast.LENGTH_LONG).show();
-        }
-    }
+					while (phoneCursor.moveToNext()) {
+						numero = phoneCursor.getString(phoneCursor
+								.getColumnIndex(NUMBER));
+
+						
+						this.addNewFriend();
+						
+					}
+
+					phoneCursor.close();
+
+				}
+			}
+		}
+//		cursor.close();
+//		Intent intent = new Intent(AddFriend.this, FriendList.class);
+//		startActivity(intent);
+//		AddFriend.this.finish();
+
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+
+		Intent intent = new Intent(this, IMService.class);
+		if (mConnection != null) {
+			bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+		} else {
+			Log.e(LOG_TAG, "onResume: mConnection is null");
+		}
+
+		
+
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+
+		if (mConnection != null) {
+			unbindService(mConnection);
+		} else {
+			Log.e(LOG_TAG, "onResume: mConnection is null");
+		}
+	}
+
+	@Override
+	public void onClick(View view) {
+		// if (view == mCancelButton) {
+		// finish();
+		// } else if (view == mAddFriendButton) {
+		// addNewFriend(numero);
+		// } else {
+		// Log.e(LOG_TAG, "onClick: view clicked is unknown");
+		// }
+	}
+
+	private final ServiceConnection mConnection = new ServiceConnection() {
+		public void onServiceConnected(ComponentName className, IBinder service) {
+			mImService = ((IMService.IMBinder) service).getService();
+		}
+
+		public void onServiceDisconnected(ComponentName className) {
+			if (mImService != null) {
+				mImService = null;
+			}
+
+			Toast.makeText(AddFriend.this, R.string.local_service_stopped,
+					Toast.LENGTH_SHORT).show();
+		}
+	};
+
+	// TODO: Remove deprecated method
+	protected Dialog onCreateDialog(int id) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(AddFriend.this);
+		if (id == TYPE_FRIEND_USERNAME) {
+			builder.setTitle(R.string.add_new_friend)
+					.setMessage(R.string.type_friend_username)
+					.setPositiveButton(R.string.OK,
+							new DialogInterface.OnClickListener() {
+								public void onClick(DialogInterface dialog,
+										int whichButton) {
+									// TODO
+								}
+							});
+		}
+
+		return builder.create();
+	}
+
+	private void addNewFriend() {
+		if (numero.length() > 0) {
+			// TODO: A thread is really needed ?
+			Thread thread = new Thread() {
+				@Override
+				public void run() {
+					// TODO: Please check if the request is successful and raise
+					// a error message if needed.
+					
+						mImService.addNewFriendRequest(numero);
+					
+				}
+			};
+			thread.start();
+
+			// TODO: Show the toast only if the sent of the request is
+			// successful
+			Toast.makeText(AddFriend.this, R.string.request_sent,
+					Toast.LENGTH_SHORT).show();
+
+			finish();
+		} else {
+			Log.e(LOG_TAG, "addNewFriend: username length ("
+					+ mFriendUserNameText.length() + ") is < 0");
+			Toast.makeText(AddFriend.this, R.string.type_friend_username,
+					Toast.LENGTH_LONG).show();
+		}
+	}
 }
