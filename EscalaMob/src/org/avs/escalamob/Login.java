@@ -181,6 +181,10 @@ public class Login extends Activity {
 								Toast.LENGTH_LONG).show();
 						// showDialog(FILL_BOTH_USERNAME_AND_PASSWORD);
 					}
+				}else{
+					Intent i = new Intent(Login.this, SignUp.class);
+					startActivity(i);
+					Login.this.finish();
 				}
 	}
 
