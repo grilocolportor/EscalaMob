@@ -1,2 +1,15 @@
 /at
+
+
+
+/.gitignore
+
+# Use curingas como
+*~
+*.swp
+
+# Ignorar todos os diretórios e arquivos em um diretório.
+
+gen/**/* 
+bin/**/* 
 /org
